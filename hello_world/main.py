@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import webapp2
+import cgi
 
 months = ['January',
           'February',
@@ -45,6 +46,9 @@ def valid_year(year):
         if year>=1900 and year<=2020:
             return year
 
+def escape_html(s):
+	return cgi.escape(s, quote = True)
+
 form="""
 <form method="post">
 	What is your birthday?
@@ -73,9 +77,9 @@ form="""
 class MainPage(webapp2.RequestHandler):
     def write_form(self, error="", month="", day="", year=""):
     	self.response.out.write(form % {"error": error,
-    									"month": month,
-    									"day": day, 
-    									"year": year})
+    									"month": escape_html(month),
+    									"day": escape_html(day), 
+    									"year": escape_html(year)})
 
 
     def get(self):
@@ -83,12 +87,16 @@ class MainPage(webapp2.RequestHandler):
        self.write_form()
 
     def post(self):
-    	user_month = valid_month(self.request.get('month'))
-    	user_day = valid_day(self.request.get('day'))
-    	user_year = valid_year(self.request.get('year'))
+    	user_month = self.request.get('month')
+    	user_day = self.request.get('day')
+    	user_year = self.request.get('year')
 
-    	if not(user_month and user_day and user_year):
-    		self.write_form("That doesn't look valid to me, friend.")
+    	month = valid_month(user_month)
+    	day = valid_day(user_day)
+    	year = valid_year(user_year)
+
+    	if not(month and day and year):
+    		self.write_form("That doesn't look valid to me, friend.", user_month, user_day, user_year)
     	else:
     		self.response.out.write("Thanks! That's a totally valid day!")
 
