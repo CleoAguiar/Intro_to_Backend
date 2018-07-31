@@ -19,6 +19,7 @@ form_html = """
 <form>
 <h2>Add a Food</h2>
 <input type="text" name="food">
+<input type="hidden" name="food" value="eggs">
 <button>Add</button>
 </form>
 """
