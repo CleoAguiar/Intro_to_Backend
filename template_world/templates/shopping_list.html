@@ -1,26 +1,23 @@
 <form>
 	<h2>Add a Food</h2>
 	<input type="text" name="food">
+	{% if items %}
+		{% for item in items %}
+			<input type="hidden" name="food" value={{item}}>
+		{% endfor %}
+	{% endif %}
 	<button>Add</button>
 
-<!-- 	<ol>
-		{% for x in range(1,n+1) %}
-			<li>{{x ** 2}}</li>
+	
+	{% if items %}
+	<br><br>
+	
+	<h2>Shopping List</h2>
+	<ul>
+		{% for item in items %}
+			<li>{{item}}</li>
 		{% endfor %}
-	</ol> -->
+	</ul>
+	{% endif %}
 
-	<ol>
-		{% for x in range(1,n+1) %}
-		<li>
-			{% if x%15==0 %}
-				FizzBuzz
-			{% elif x%3==0 %}
-				Fizz
-			{% elif x%5==0 %}
-				Buzz
-			{% else %}
-				{{x}}
-			{% endif %}
-		</li>
-		{% endfor %}
 </form>
