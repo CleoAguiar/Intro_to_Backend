@@ -18,7 +18,8 @@ import jinja2
 import webapp2
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir))
+jinja_env = jinja2.Environment(autoescape=True, loader = jinja2.FileSystemLoader(template_dir))
+
 
 hidden_html = """
 <input type="hidden" name="food" value="%s">
@@ -33,7 +34,6 @@ shopping_list_html = """
 <ul>
 %s
 </ul>
-
 """
 
 class Handler(webapp2.RequestHandler):
@@ -41,34 +41,33 @@ class Handler(webapp2.RequestHandler):
     self.response.out.write(*a, **kw)
 
   def render_str(self, template, **params):
-   	t = jinja_env.get_template(template)
-   	return t.render(params)
+    t = jinja_env.get_template(template)
+    return t.render(params)
 
   def render(self, template, **kw):
-  	self.write(self.render_str(template, **kw))
-
+    self.write(self.render_str(template, **kw))
+    
 
 class MainPage(Handler):
   def get(self):
-    self.render("shopping_list.html")
+    self.render('shopping_list.html')
+    
 
- #  	output = form_html
-  	
- #  	output_hidden = ""
+  	# output = form_html
+  	# output_hidden = ""
 
- #  	items = self.request.get_all("food")
- #  	if items:
-	#   	output_items = ""
-	#   	for item in items:
-	#   		output_hidden += hidden_html % item
-	#   		output_items += item_html % item
+  	# items = self.request.get_all("food")
+  	# if items:
+	  #    output_items = ""
+	  #    for item in items:
+	  #        output_hidden += hidden_html % item
+	  #        output_items += item_html % item
 
-	#   	output_shopping = shopping_list_html % output_items
-	#   	output += output_shopping
+   #     output_shopping = shopping_list_html % output_items
+   #     output += output_shopping
 
-	# output = output % output_hidden
-
- #    	self.write(output)
+   #  output = output % output_hidden
+   #  self.write(output)
 
 app = webapp2.WSGIApplication([('/', MainPage),
                               ],
