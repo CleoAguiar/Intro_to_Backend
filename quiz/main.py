@@ -21,21 +21,26 @@ import jinja2
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(autoescape=True, loader = jinja2.FileSystemLoader(template_dir))
 
+
+
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
 
-class BaseHandler(webapp2.RequestHandler):
-  def render(self, template, **kw):
-    self.response.out.write(render_str(template, **kw))
 
-  def write(self, *a, **kw):
-    self.response.out.write(*a, **kw)
+class BaseHandler(webapp2.RequestHandler):
+    def render(self, template, **kw):
+        self.response.out.write(render_str(template, **kw))
+
+    def write(self, *a, **kw):
+        self.response.out.write(*a, **kw)
+
 
 class MainPage(BaseHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
         self.response.write('Quiz ROT 13')
+
 
 class Rot13Handler(BaseHandler):
     """docstring for Rot13Handler"""
@@ -47,10 +52,17 @@ class Rot13Handler(BaseHandler):
         text = self.request.get('text')
         if text:
             rot13 = text.encode('rot13')
-        self.render('rot13-main.html', text = rot13)
+        self.render('rot13-main.html', text=rot13)
 
+
+class SignupHandler(BaseHandler):
+    """docstring for SignupHandler"""
+    def get(self):
+        self.render('signup.html')
+        
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/rot13', Rot13Handler),
+    ('/signup', SignupHandler),
 ], debug=True)
