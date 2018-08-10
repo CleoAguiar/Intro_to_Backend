@@ -80,29 +80,45 @@ class SignupHandler(BaseHandler):
         password = self.request.get('password')
         passwordVerify = self.request.get('verify')
         email = self.request.get('email')
-
+        nameError = ''
+        passError = ''
+        verifyError = ''
+        emailError = ''
         valid_user = valid_username(username)
         valid_pass = valid_password(password)
         valid_mail = valid_email(email)
         
-        if valid_user:
-            self.redirect('/wellcome')
-        if not valid_user or not valid_pass:
-            nameError = ''
-            passError = ''
+        if passwordVerify == password:
+            verify_password = True
+        else:
+            verify_password = False
+            verifyError = "Your passwords did'nt match."
+
+        if valid_user and valid_pass and verify_password:
+            self.redirect('/wellcome'+'?username=' + username)
+        else:
             if not valid_user:
                 nameError = "That's not a valid username."
             if not valid_pass:
                 passError = "That wasn't a valid password."
-            self.render('signup.html', nameError=nameError, passError=passError) 
-        else:
-            self.render('signup.html')
+                verifyError = ''
+            if not valid_mail:
+                emailError = "That's not a valid email."
+
+            self.render('signup.html', 
+                        nameError=nameError, 
+                        passError=passError,
+                        verifyError=verifyError,
+                        emailError=emailError,
+                        username=username,
+                        email=email) 
 
 
 class WellcomeHandler(BaseHandler):
     """docstring for WellcomeHandler"""
     def get(self):
-        self.render('wellcome.html', username='testeudacity')
+        username = self.request.get('username')
+        self.render('wellcome.html', username=username)
         
 
 app = webapp2.WSGIApplication([
