@@ -24,18 +24,20 @@ PASSWORD_RE = re.compile("^.{3,20}$")
 EMAIL_RE = re.compile("^[\S]+@[\S]+.[\S]+$")
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-jinja_env = jinja2.Environment(autoescape=True, loader = jinja2.FileSystemLoader(template_dir))
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
+                               autoescape=True)
 
 
 def valid_username(username):
-    return USER_RE.match(username)
+    return username and USER_RE.match(username)
 
 
 def valid_password(password):
-    return PASSWORD_RE.match(password)
+    return password and PASSWORD_RE.match(password)
+
 
 def valid_email(email):
-    return EMAIL_RE.match(email)
+    return not email or EMAIL_RE.match(email)
 
 
 def render_str(template, **params):
@@ -87,7 +89,7 @@ class SignupHandler(BaseHandler):
         valid_user = valid_username(username)
         valid_pass = valid_password(password)
         valid_mail = valid_email(email)
-        
+
         if passwordVerify == password:
             verify_password = True
         else:
@@ -95,7 +97,7 @@ class SignupHandler(BaseHandler):
             verifyError = "Your passwords did'nt match."
 
         if valid_user and valid_pass and verify_password:
-            self.redirect('/wellcome'+'?username=' + username)
+            self.redirect('/wellcome?username=' + username)
         else:
             if not valid_user:
                 nameError = "That's not a valid username."
@@ -105,21 +107,24 @@ class SignupHandler(BaseHandler):
             if not valid_mail:
                 emailError = "That's not a valid email."
 
-            self.render('signup.html', 
-                        nameError=nameError, 
+            self.render('signup.html',
+                        nameError=nameError,
                         passError=passError,
                         verifyError=verifyError,
                         emailError=emailError,
                         username=username,
-                        email=email) 
+                        email=email)
 
 
 class WellcomeHandler(BaseHandler):
     """docstring for WellcomeHandler"""
     def get(self):
         username = self.request.get('username')
-        self.render('wellcome.html', username=username)
-        
+        if valid_username(username):
+            self.render('wellcome.html', username=username)
+        else:
+            self.redirect('/signup')
+
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
