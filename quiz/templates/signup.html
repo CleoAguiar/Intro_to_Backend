@@ -2,6 +2,11 @@
 <html>
 <head>
 	<title>Signup</title>
+	<style type="text/css">
+		.error{
+			color: red;
+		}
+	</style>
 </head>
 <body>
 	<h2>Signup</h2>
@@ -13,7 +18,7 @@
 					<td>
 						<input type="text" name="username" value={{username}}>
 					</td>
-					<td class="error" style="color: red">{{nameError}}</td>
+					<td class="error">{{nameError}}</td>
 				</tr>
 
 				<tr>
@@ -21,7 +26,7 @@
 					<td>
 						<input type="password" name="password" value>
 					</td>
-					<td class="error" style="color: red">{{passError}}</td>
+					<td class="error">{{passError}}</td>
 				</tr>
 
 				<tr>
@@ -29,7 +34,7 @@
 					<td>
 						<input type="password" name="verify" value>
 					</td>
-					<td class="error" style="color: red">{{verifyError}}</td>
+					<td class="error">{{verifyError}}</td>
 				</tr>
 
 				<tr>
@@ -37,7 +42,7 @@
 					<td>
 						<input type="text" name="email" value={{email}}>
 					</td>
-					<td class="error" style="color: red">{{emailError}}</td>
+					<td class="error">{{emailError}}</td>
 				</tr>
 
 			</tbody>
