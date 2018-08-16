@@ -36,26 +36,50 @@ class Handler(webapp2.RequestHandler):
         self.write(self.render_str(template, **kw))
 
 
+class Blog(db.Model):
+    subject = db.StringProperty(required=True)
+    blog = db.TextProperty(required=True)
+    created = db.DateProperty(auto_now_add=True)
+        
+
 class MainPage(webapp2.RequestHandler):
     def get(self):
         self.response.write('Basic Blog!')
 
 
 class MyBlog(Handler):
-	"""docstring for MyBlog"""
-	def get(self):
-		self.render("myblog.html")
+    """docstring for MyBlog"""
+    def get(self):
+        self.render("myblog.html")
 
 
 class NewPost(Handler):
-	"""docstring for NewPost"""
-	def get(self):
-		self.render("newpost.html")
+    """docstring for NewPost"""
+    def render_front(self, subject="", blog="", error=""):
+        # blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
 
-		
+        self.render("newpost.html", subject=subject, blog=blog, error=error)
+
+    def get(self):
+        self.render_front()
+
+    def post(self):
+        subject = self.request.get("subject")
+        blog = self.request.get("blog")
+
+        if subject and blog:
+            b = Blog(subject=subject, blog=blog)
+            b.put()
+            self.redirect("/" + b.key().id())
+            # self.response.write("OK")
+
+        else:
+            error = "We need both a Subject and some Blog!"
+            self.render_front(subject, blog, error)
+        
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/blog', MyBlog),
-    ('/newpost', NewPost),
+    ('/blog/newpost', NewPost),
 ], debug=True)
