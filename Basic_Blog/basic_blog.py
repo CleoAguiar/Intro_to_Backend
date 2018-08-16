@@ -49,14 +49,17 @@ class MainPage(webapp2.RequestHandler):
 
 class MyBlog(Handler):
     """docstring for MyBlog"""
+    def render_blog(self, subject="", blog=""):
+        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
+        self.render("myblog.html", subject=subject, blog=blog, blogs=blogs)
+
     def get(self):
-        self.render("myblog.html")
+        self.render_blog()
 
 
 class NewPost(Handler):
     """docstring for NewPost"""
-    def render_front(self, subject="", blog="", error=""):
-        # blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
+    def render_front(self, subject="", blog="", error=""):     
 
         self.render("newpost.html", subject=subject, blog=blog, error=error)
 
@@ -70,8 +73,8 @@ class NewPost(Handler):
         if subject and blog:
             b = Blog(subject=subject, blog=blog)
             b.put()
-            self.redirect("/" + b.key().id())
-            # self.response.write("OK")
+            # self.redirect("/" + b.key().id())
+            self.response.write(b.key().id())
 
         else:
             error = "We need both a Subject and some Blog!"

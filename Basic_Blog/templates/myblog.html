@@ -42,36 +42,54 @@
 		}
 
 		hr {
-			margin: 20px auto;
+			margin: 5px auto;
 		}
 
-		.art + .art {
+		table {
+			width: 100%;
+		}
+
+		.blog + .blog {
 			margin-top: 20px;
 		}
 
-		.art-title {
+		.blog-subject {
 			font-weight: bold;
 			font-size: 20px;
 		}
 
-		.art-body {
+		.blog-created {
+			font-size: 15px;
+		}
+
+		.blog-body {
 			margin: 0;
 			font-size: 17px;
 		}
+
+
 	</style>
 
 </head>
 <body>
 	<h1>My Blog!</h1>
 
-	<hr>
 	{% for b in blogs %}
 	<div class="blogs">
-		<div class="blog-subject">{{b.subject}}</div>
-		<div class="blog-created">{{b.created}}</div>
+		<table>
+			<tr>
+				<td class="blog-subject">{{b.subject}}</td>
+				<td class="blog-created">{{b.created}}</td>
+			</tr>
+		</table>
+		<!-- <div class="blog-subject">{{b.subject}}</div>
+		<div class="blog-created">{{b.created}}</div> -->
+		<hr>
 		<pre class="blog-body">{{b.blog}}</pre>
 	</div>
+	<br><br>
 	{% endfor %}
+
 
 </body>
 </html>
