@@ -23,6 +23,7 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
+
 class Handler(webapp2.RequestHandler):
     """docstring for Handler"""
     def write(self, *a, **kw):
@@ -48,7 +49,7 @@ class MainPage(Handler):
         arts = db.GqlQuery("SELECT * FROM Art ORDER BY created DESC")
 
         self.render("front.html", title=title, art=art, error=error, arts=arts)
-        
+
     def get(self):
         self.render_front()
 
