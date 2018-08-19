@@ -1,95 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>My Blog</title>
+{% extends "base.html" %}
 
-	<style type="text/css">
-		body {
-			font-family: sans-serif;
-			width: 800px;
-			margin: 0 auto;
-			padding: 10px;
-		}
+{% block content %}
 
-		h1{
-			text-align: center;
-		}
-
-		form {
-			text-align: center;
-		}
-
-		label {
-			display: block;
-			font-size: 20px;
-		}
-
-		input[type=text] {
-			width: 400px;
-			font-size: 20px;
-			padding: 2px;
-		}
-
-		textarea {
-			width: 400px;
-			height: 200px;
-			font-size: 17px;
-			font-family: monospace;
-		}
-
-		input[type=submit] {
-			font-size: 24px;
-		}
-
-		hr {
-			margin: 5px auto;
-		}
-
-		table {
-			width: 100%;
-		}
-
-		.blog + .blog {
-			margin-top: 20px;
-		}
-
-		.blog-subject {
-			font-weight: bold;
-			font-size: 20px;
-		}
-
-		.blog-created {
-			font-size: 15px;
-		}
-
-		.blog-body {
-			margin: 0;
-			font-size: 17px;
-		}
-
-
-	</style>
-
-</head>
-<body>
-	<h1>My Blog!</h1>
-
-	{% for b in blogs %}
-	<div class="blogs">
-		<table>
-			<tr>
-				<td class="blog-subject">{{b.subject}}</td>
-				<td class="blog-created">{{b.created}}</td>
-			</tr>
-		</table>
-		<!-- <div class="blog-subject">{{b.subject}}</div>
-		<div class="blog-created">{{b.created}}</div> -->
-		<hr>
-		<pre class="blog-body">{{b.blog}}</pre>
-	</div>
-	<br><br>
+	{% for p in posts %}
+		{{ p.render() | safe }}
+		<br><br>
 	{% endfor %}
 
-
-</body>
-</html>
+{% endblock %}

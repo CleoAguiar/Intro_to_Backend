@@ -23,6 +23,11 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
+def render_str(template, **params):
+    t = jinja_env.get_template(template)
+    return t.render(params)
+
+
 class Handler(webapp2.RequestHandler):
     """docstring for Handler"""
     def write(self, *a, **kw):
@@ -36,53 +41,70 @@ class Handler(webapp2.RequestHandler):
         self.write(self.render_str(template, **kw))
 
 
-class Blog(db.Model):
-    subject = db.StringProperty(required=True)
-    blog = db.TextProperty(required=True)
-    created = db.DateProperty(auto_now_add=True)
-        
-
-class MainPage(webapp2.RequestHandler):
+class MainPage(Handler):
     def get(self):
         self.response.write('Basic Blog!')
 
+#Blog stuff
 
-class MyBlog(Handler):
-    """docstring for MyBlog"""
-    def render_blog(self, subject="", blog=""):
-        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
-        self.render("myblog.html", subject=subject, blog=blog, blogs=blogs)
+def blog_key(name='default'):
+    return db.Key.from_path('blogs', name)
 
+
+class Post(db.Model):
+    subject = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)  
+    last_modified = db.DateTimeProperty(auto_now=True)
+
+    def render(self):
+        self._render_text = self.content.replace('\n', '<br>')
+        return render_str("post.html", p=self)
+
+
+class MyBlogFront(Handler):
+    """docstring for MyBlogFront"""
     def get(self):
-        self.render_blog()
+        # posts = Post.all().order('-created')
+        posts = db.GqlQuery("SELECT * FROM Post ORDER BY created DESC")
+        self.render("myblog.html", posts=posts)
+
+
+class PostPage(Handler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        if not post:
+            self.error(404)
+            return
+
+        self.render("permalink.html", post=post)
 
 
 class NewPost(Handler):
     """docstring for NewPost"""
-    def render_front(self, subject="", blog="", error=""):     
+    def get(self):     
+        self.render("newpost.html")
 
-        self.render("newpost.html", subject=subject, blog=blog, error=error)
-
-    def get(self):
-        self.render_front()
 
     def post(self):
         subject = self.request.get("subject")
-        blog = self.request.get("blog")
+        content = self.request.get("content")
 
-        if subject and blog:
-            b = Blog(subject=subject, blog=blog)
-            b.put()
-            # self.redirect("/" + b.key().id())
-            self.response.write(b.key().id())
+        if subject and content:
+            p = Post(parent=blog_key(), subject=subject, content=content)
+            p.put()
+            self.redirect('/blog/%s' % str(p.key().id()))
 
         else:
             error = "We need both a Subject and some Blog!"
-            self.render_front(subject, blog, error)
+            self.render("newpost.html", subject=subject, content=content, error=error)
         
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/blog', MyBlog),
+    ('/blog/?', MyBlogFront),
+    ('/blog/([0-9]+)', PostPage),
     ('/blog/newpost', NewPost),
 ], debug=True)
