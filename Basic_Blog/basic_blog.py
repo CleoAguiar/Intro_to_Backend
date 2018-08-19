@@ -23,6 +23,7 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
+
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
@@ -45,7 +46,8 @@ class MainPage(Handler):
     def get(self):
         self.response.write('Basic Blog!')
 
-#Blog stuff
+# Blog stuff
+
 
 def blog_key(name='default'):
     return db.Key.from_path('blogs', name)
@@ -54,7 +56,7 @@ def blog_key(name='default'):
 class Post(db.Model):
     subject = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)  
+    created = db.DateTimeProperty(auto_now_add=True)
     last_modified = db.DateTimeProperty(auto_now=True)
 
     def render(self):
@@ -84,9 +86,8 @@ class PostPage(Handler):
 
 class NewPost(Handler):
     """docstring for NewPost"""
-    def get(self):     
+    def get(self):
         self.render("newpost.html")
-
 
     def post(self):
         subject = self.request.get("subject")
@@ -99,8 +100,9 @@ class NewPost(Handler):
 
         else:
             error = "We need both a Subject and some Blog!"
-            self.render("newpost.html", subject=subject, content=content, error=error)
-        
+            self.render("newpost.html", subject=subject, content=content,
+                        error=error)
+
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
