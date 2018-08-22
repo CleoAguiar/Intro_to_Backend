@@ -40,12 +40,16 @@ class MainPage(Handler):
         self.response.headers['Content-Type'] = 'text/plain'
         visits = self.request.cookies.get('visits', '0')
         if visits.isdigit():
-        	visits = int(visits) + 1
+            visits = int(visits) + 1
         else:
-        	visits = 0
+            visits = 0
 
         self.response.headers.add_header('Set-Cookie', 'visits=%s' % visits)
-        self.write("You've been here %s times!" % visits)
+
+        if visits > 100:
+            self.write("You're the best!")
+        else:
+            self.write("You've been here %s times!" % visits)
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
