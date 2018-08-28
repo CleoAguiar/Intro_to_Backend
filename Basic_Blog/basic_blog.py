@@ -16,12 +16,32 @@ import webapp2
 
 import os
 import jinja2
+import re
 
 from google.appengine.ext import db
+
+USER_RE = re.compile("^[a-zA-Z0-9_-]{3,20}$")
+PASSWORD_RE = re.compile("^.{3,20}$")
+EMAIL_RE = re.compile("^[\S]+@[\S]+.[\S]+$")
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
+
+def valid_username(username):
+    return username and USER_RE.match(username)
+
+
+def valid_password(password):
+    return password and PASSWORD_RE.match(password)
+
+
+def valid_email(email):
+    return not email or EMAIL_RE.match(email)
+
+
+def blog_key(name='default'):
+    return db.Key.from_path('blogs', name)
 
 
 def render_str(template, **params):
@@ -46,12 +66,59 @@ class MainPage(Handler):
     def get(self):
         self.response.write('Basic Blog!')
 
+
+class SignupHandler(Handler):
+    def get(self):
+        self.render('signup.html')
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+        passwordVerify = self.request.get('verify')
+        email = self.request.get('email')
+        nameError = ''
+        passError = ''
+        verifyError = ''
+        emailError = ''
+        valid_user = valid_username(username)
+        valid_pass = valid_password(password)
+        valid_mail = valid_email(email)
+
+        if passwordVerify == password:
+            verify_password = True
+        else:
+            verify_password = False
+            verifyError = "Your passwords did'nt match."
+
+        if valid_user and valid_pass and verify_password:
+            self.redirect('/wellcome?username=' + username)
+        else:
+            if not valid_user:
+                nameError = "That's not a valid username."
+            if not valid_pass:
+                passError = "That wasn't a valid password."
+                verifyError = ''
+            if not valid_mail:
+                emailError = "That's not a valid email."
+
+            self.render('signup.html',
+                        nameError=nameError,
+                        passError=passError,
+                        verifyError=verifyError,
+                        emailError=emailError,
+                        username=username,
+                        email=email)
+
+
+class WellcomeHandler(Handler):
+    def get(self):
+        username = self.request.get('username')
+        if valid_username(username):
+            self.render('wellcome.html', username=username)
+        else:
+            self.redirect('/blog/signup/?')
+
 # Blog stuff
-
-
-def blog_key(name='default'):
-    return db.Key.from_path('blogs', name)
-
 
 class Post(db.Model):
     subject = db.StringProperty(required=True)
@@ -106,6 +173,8 @@ class NewPost(Handler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
+    ('/blog/signup/?', SignupHandler),
+    ('/wellcome/?', WellcomeHandler),
     ('/blog/?', MyBlogFront),
     ('/blog/([0-9]+)', PostPage),
     ('/blog/newpost', NewPost),
