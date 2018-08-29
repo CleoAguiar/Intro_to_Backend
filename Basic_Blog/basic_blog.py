@@ -17,6 +17,9 @@ import webapp2
 import os
 import jinja2
 import re
+import random
+import string
+import hashlib
 
 from google.appengine.ext import db
 
@@ -38,6 +41,23 @@ def valid_password(password):
 
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
+
+
+# Security
+def make_salt():
+    return ''.join(random.choice(string.letters) for x in xrange(5))
+
+
+def make_pw_hash(name, pw, salt = None):
+    if not salt:
+        salt = make_salt()
+    h = hashlib.sha256(name + pw + salt).hexdigest()
+    return '%s|%s' % (salt, h)
+
+
+def valid_pw(name, pw, h):
+    salt = h.split('|')[0]
+    return h == make_pw_hash(name, pw, salt)
 
 
 def blog_key(name='default'):
@@ -67,6 +87,16 @@ class MainPage(Handler):
         self.response.write('Basic Blog!')
 
 
+# class Profile(db.Model):
+#     username = db.StringProperty(required=True)
+#     password = db.TextProperty(required=True)
+#     email = db.DateTimeProperty(auto_now_add=True)
+
+#     def render(self):
+#         self._render_text = self.content.replace('\n', '<br>')
+#         return render_str("post.html", p=self)
+        
+
 class SignupHandler(Handler):
     def get(self):
         self.render('signup.html')
@@ -91,7 +121,11 @@ class SignupHandler(Handler):
             verifyError = "Your passwords did'nt match."
 
         if valid_user and valid_pass and verify_password:
-            self.redirect('/wellcome?username=' + username)
+            new_cookie_val = make_pw_hash(username, password)
+            self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/wellcome' % new_cookie_val)
+            # self.redirect('/wellcome?username=' + username)
+            self.redirect('/wellcome?')
+
         else:
             if not valid_user:
                 nameError = "That's not a valid username."
@@ -113,10 +147,29 @@ class SignupHandler(Handler):
 class WellcomeHandler(Handler):
     def get(self):
         username = self.request.get('username')
-        if valid_username(username):
-            self.render('wellcome.html', username=username)
-        else:
-            self.redirect('/blog/signup/?')
+        password = self.request.get('password')
+
+        self.response.write('Welcome!')
+
+        # self.response.headers['Content-Type'] = 'text/plain'
+        # user_id = 0
+        # userID_cookie_str = self.request.cookies.get('user_id')
+        # if userID_cookie_str:
+        #     cookie_val = valid_pw(username, password, userID_cookie_str)
+        #     if cookie_val:
+        #         self.render('wellcome.html', username=username)
+        #     else:
+        #         self.redirect('/blog/signup/?')
+                # user_id = int(cookie_val)
+
+        # user_id += 1
+
+        
+        # if user_id > 1000:
+        #     self.write("You're the best!")
+        # else:
+        #     self.write("You've been here %s times!" % user_id)        
+
 
 # Blog stuff
 
@@ -174,7 +227,7 @@ class NewPost(Handler):
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/blog/signup/?', SignupHandler),
-    ('/wellcome/?', WellcomeHandler),
+    ('/wellcome', WellcomeHandler),
     ('/blog/?', MyBlogFront),
     ('/blog/([0-9]+)', PostPage),
     ('/blog/newpost', NewPost),
