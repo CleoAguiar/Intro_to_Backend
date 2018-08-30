@@ -13,60 +13,72 @@
 # limitations under the License.
 
 import webapp2
+import jinja2
 
 import os
-import jinja2
 import re
 import random
-import string
 import hashlib
+import hmac
+from string import letters
 
 from google.appengine.ext import db
 
-USER_RE = re.compile("^[a-zA-Z0-9_-]{3,20}$")
-PASSWORD_RE = re.compile("^.{3,20}$")
-EMAIL_RE = re.compile("^[\S]+@[\S]+.[\S]+$")
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
+secret = 'secretsctring'
+
+USER_RE = re.compile("^[a-zA-Z0-9_-]{3,20}$")
+PASSWORD_RE = re.compile("^.{3,20}$")
+EMAIL_RE = re.compile("^[\S]+@[\S]+.[\S]+$")
+
+def render_str(template, **params):
+    t = jinja_env.get_template(template)
+    return t.render(params)
+
+# Key
+def blog_key(name='default'):
+    return db.Key.from_path('blogs', name)
+
+def users_key(group='default'):
+    return db.Key.from_path('users', group)
+
+# Valid user, password and email
 def valid_username(username):
     return username and USER_RE.match(username)
-
 
 def valid_password(password):
     return password and PASSWORD_RE.match(password)
 
-
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
+# Cookies
+def make_secure_val(val):
+    return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
+
+def check_secure_val(secure_val):
+    val = secure_val.split('|')[0]
+    if secure_val == make_secure_val(val):
+        return val
 
 # Security
-def make_salt():
-    return ''.join(random.choice(string.letters) for x in xrange(5))
-
+def make_salt(length = 5):
+    return ''.join(random.choice(letters) for x in xrange(length))
 
 def make_pw_hash(name, pw, salt = None):
     if not salt:
         salt = make_salt()
     h = hashlib.sha256(name + pw + salt).hexdigest()
-    return '%s|%s' % (salt, h)
-
+    return '%s,%s' % (salt, h)
 
 def valid_pw(name, pw, h):
-    salt = h.split('|')[0]
+    salt = h.split(',')[0]
     return h == make_pw_hash(name, pw, salt)
 
-
-def blog_key(name='default'):
-    return db.Key.from_path('blogs', name)
-
-
-def render_str(template, **params):
-    t = jinja_env.get_template(template)
-    return t.render(params)
 
 
 class Handler(webapp2.RequestHandler):
@@ -80,6 +92,22 @@ class Handler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
+
+    def set_cookie(self, name, val):
+        new_cookie_val = make_secure_val(val)
+        self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (name, new_cookie_val))
+
+    def read_cookie(self, name):
+        cookie_val = self.request.cookies.get(name)
+        return cookie_val and check_secure_val(cookie_val)
+    
+    def login(self, user):
+        self.set_cookie('user_id', str(user.key().id()))
+
+    def initialize(self, *a, **kw):
+        webapp2.RequestHandler.initialize(self, *a, **kw)
+        userID_cookie = self.read_cookie('user_id')
+
 
 
 class MainPage(Handler):
@@ -121,10 +149,7 @@ class SignupHandler(Handler):
             verifyError = "Your passwords did'nt match."
 
         if valid_user and valid_pass and verify_password:
-            new_cookie_val = make_pw_hash(username, password)
-            self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/wellcome' % new_cookie_val)
-            # self.redirect('/wellcome?username=' + username)
-            self.redirect('/wellcome?')
+            self.redirect('/wellcome?username=' + username)
 
         else:
             if not valid_user:
@@ -147,31 +172,13 @@ class SignupHandler(Handler):
 class WellcomeHandler(Handler):
     def get(self):
         username = self.request.get('username')
-        password = self.request.get('password')
-
-        self.response.write('Welcome!')
-
-        # self.response.headers['Content-Type'] = 'text/plain'
-        # user_id = 0
-        # userID_cookie_str = self.request.cookies.get('user_id')
-        # if userID_cookie_str:
-        #     cookie_val = valid_pw(username, password, userID_cookie_str)
-        #     if cookie_val:
-        #         self.render('wellcome.html', username=username)
-        #     else:
-        #         self.redirect('/blog/signup/?')
-                # user_id = int(cookie_val)
-
-        # user_id += 1
-
-        
-        # if user_id > 1000:
-        #     self.write("You're the best!")
-        # else:
-        #     self.write("You've been here %s times!" % user_id)        
-
+        if valid_username(username):
+            self.render('wellcome.html', username=username)
+        else:
+            self.redirect('signup.html')  
 
 # Blog stuff
+
 
 class Post(db.Model):
     subject = db.StringProperty(required=True)
