@@ -115,14 +115,10 @@ class MainPage(Handler):
         self.response.write('Basic Blog!')
 
 
-# class Profile(db.Model):
-#     username = db.StringProperty(required=True)
-#     password = db.TextProperty(required=True)
-#     email = db.DateTimeProperty(auto_now_add=True)
-
-#     def render(self):
-#         self._render_text = self.content.replace('\n', '<br>')
-#         return render_str("post.html", p=self)
+class Profile(db.Model):
+    username = db.StringProperty(required=True)
+    pw_hash = db.StringProperty(required=True)
+    email = db.StringProperty()
         
 
 class SignupHandler(Handler):
@@ -168,6 +164,19 @@ class SignupHandler(Handler):
                         username=username,
                         email=email)
 
+
+class Login(Handler):
+    def get(self):
+        self.render('login.html')
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+
+        slef.redirect('/blog')
+
+
+        
 
 class WellcomeHandler(Handler):
     def get(self):
@@ -233,9 +242,10 @@ class NewPost(Handler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/blog/signup/?', SignupHandler),
+    ('/signup/?', SignupHandler),
     ('/wellcome', WellcomeHandler),
     ('/blog/?', MyBlogFront),
     ('/blog/([0-9]+)', PostPage),
     ('/blog/newpost', NewPost),
+    ('/login', Login),
 ], debug=True)
