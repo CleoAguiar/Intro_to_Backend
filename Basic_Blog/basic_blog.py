@@ -79,6 +79,34 @@ def valid_pw(name, pw, h):
     salt = h.split(',')[0]
     return h == make_pw_hash(name, pw, salt)
 
+# Data Base
+class Profile(db.Model):
+    name = db.StringProperty(required=True)
+    pw_hash = db.StringProperty(required=True)
+    email = db.StringProperty()
+
+    @classmethod
+    def by_id(cls, uid):
+        return Profile.get_by_id(uid, parent=users_key())
+
+    @classmethod
+    def by_name(cls, name):
+        u = Profile.all().filter('name =', name).get()
+        return u
+
+    @classmethod
+    def register(cls, name, pw, email = None):
+        pw_hash = make_pw_hash(name, pw)
+        return Profile(parent=users_key(), 
+                       name=name, 
+                       pw_hash=pw_hash, 
+                       email = email)
+    
+    @classmethod
+    def login(cls, name, pw):
+        user = cls.by_name(name)
+        if user and valid_pw(name, pw, user.pw_hash):
+            return user
 
 
 class Handler(webapp2.RequestHandler):
@@ -109,17 +137,10 @@ class Handler(webapp2.RequestHandler):
         userID_cookie = self.read_cookie('user_id')
 
 
-
 class MainPage(Handler):
     def get(self):
         self.response.write('Basic Blog!')
 
-
-class Profile(db.Model):
-    username = db.StringProperty(required=True)
-    pw_hash = db.StringProperty(required=True)
-    email = db.StringProperty()
-        
 
 class SignupHandler(Handler):
     def get(self):
@@ -145,7 +166,24 @@ class SignupHandler(Handler):
             verifyError = "Your passwords did'nt match."
 
         if valid_user and valid_pass and verify_password:
-            self.redirect('/wellcome?username=' + username)
+            user = Profile.by_name(username)
+
+            if user:
+                nameError = "That user already exists."
+                self.render('signup.html',
+                        nameError=nameError,
+                        passError=passError,
+                        verifyError=verifyError,
+                        emailError=emailError,
+                        username=username,
+                        email=email)
+            else:
+                user = Profile.register(username, password, email)
+                user.put()
+
+                self.login(user)
+                # self.redirect('/blog')
+                self.redirect('/wellcome?username=' + username)
 
         else:
             if not valid_user:
@@ -173,7 +211,16 @@ class Login(Handler):
         username = self.request.get('username')
         password = self.request.get('password')
 
-        slef.redirect('/blog')
+        user = Profile.login(username, password)
+        if user:
+            self.login(u)
+            self.redirect('/blog')    
+
+        else:
+            nameError = "Invalid login"
+            self.render('signup.html',
+                        nameError=nameError)
+        
 
 
         
