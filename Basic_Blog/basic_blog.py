@@ -35,30 +35,41 @@ USER_RE = re.compile("^[a-zA-Z0-9_-]{3,20}$")
 PASSWORD_RE = re.compile("^.{3,20}$")
 EMAIL_RE = re.compile("^[\S]+@[\S]+.[\S]+$")
 
+
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
 
 # Key
+
+
 def blog_key(name='default'):
     return db.Key.from_path('blogs', name)
+
 
 def users_key(group='default'):
     return db.Key.from_path('users', group)
 
 # Valid user, password and email
+
+
 def valid_username(username):
     return username and USER_RE.match(username)
 
+
 def valid_password(password):
     return password and PASSWORD_RE.match(password)
+
 
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
 # Cookies
+
+
 def make_secure_val(val):
     return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
+
 
 def check_secure_val(secure_val):
     val = secure_val.split('|')[0]
@@ -66,20 +77,26 @@ def check_secure_val(secure_val):
         return val
 
 # Security
-def make_salt(length = 5):
+
+
+def make_salt(length=5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
-def make_pw_hash(name, pw, salt = None):
+
+def make_pw_hash(name, pw, salt=None):
     if not salt:
         salt = make_salt()
     h = hashlib.sha256(name + pw + salt).hexdigest()
     return '%s,%s' % (salt, h)
+
 
 def valid_pw(name, pw, h):
     salt = h.split(',')[0]
     return h == make_pw_hash(name, pw, salt)
 
 # Data Base
+
+
 class Profile(db.Model):
     name = db.StringProperty(required=True)
     pw_hash = db.StringProperty(required=True)
@@ -95,18 +112,29 @@ class Profile(db.Model):
         return u
 
     @classmethod
-    def register(cls, name, pw, email = None):
+    def register(cls, name, pw, email=None):
         pw_hash = make_pw_hash(name, pw)
-        return Profile(parent=users_key(), 
-                       name=name, 
-                       pw_hash=pw_hash, 
-                       email = email)
-    
+        return Profile(parent=users_key(),
+                       name=name,
+                       pw_hash=pw_hash,
+                       email=email)
+
     @classmethod
     def login(cls, name, pw):
         user = cls.by_name(name)
         if user and valid_pw(name, pw, user.pw_hash):
             return user
+
+
+class Post(db.Model):
+    subject = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    last_modified = db.DateTimeProperty(auto_now=True)
+
+    def render(self):
+        self._render_text = self.content.replace('\n', '<br>')
+        return render_str("post.html", p=self)
 
 
 class Handler(webapp2.RequestHandler):
@@ -123,18 +151,20 @@ class Handler(webapp2.RequestHandler):
 
     def set_cookie(self, name, val):
         new_cookie_val = make_secure_val(val)
-        self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (name, new_cookie_val))
+        self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' %
+                                         (name, new_cookie_val))
 
     def read_cookie(self, name):
         cookie_val = self.request.cookies.get(name)
         return cookie_val and check_secure_val(cookie_val)
-    
+
     def login(self, user):
         self.set_cookie('user_id', str(user.key().id()))
 
     def initialize(self, *a, **kw):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         userID_cookie = self.read_cookie('user_id')
+        self.user = userID_cookie and Profile.by_id(int(userID_cookie))
 
 
 class MainPage(Handler):
@@ -171,12 +201,12 @@ class SignupHandler(Handler):
             if user:
                 nameError = "That user already exists."
                 self.render('signup.html',
-                        nameError=nameError,
-                        passError=passError,
-                        verifyError=verifyError,
-                        emailError=emailError,
-                        username=username,
-                        email=email)
+                            nameError=nameError,
+                            passError=passError,
+                            verifyError=verifyError,
+                            emailError=emailError,
+                            username=username,
+                            email=email)
             else:
                 user = Profile.register(username, password, email)
                 user.put()
@@ -213,17 +243,15 @@ class Login(Handler):
 
         user = Profile.login(username, password)
         if user:
-            self.login(u)
-            self.redirect('/blog')    
+            self.login(user)
+            self.redirect('/blog/newpost')
 
         else:
-            nameError = "Invalid login"
-            self.render('signup.html',
-                        nameError=nameError)
-        
+            msgError = "Invalid login"
+            self.render('login.html',
+                        username=username,
+                        error=msgError)
 
-
-        
 
 class WellcomeHandler(Handler):
     def get(self):
@@ -231,20 +259,9 @@ class WellcomeHandler(Handler):
         if valid_username(username):
             self.render('wellcome.html', username=username)
         else:
-            self.redirect('signup.html')  
+            self.redirect('signup.html')
 
 # Blog stuff
-
-
-class Post(db.Model):
-    subject = db.StringProperty(required=True)
-    content = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-
-    def render(self):
-        self._render_text = self.content.replace('\n', '<br>')
-        return render_str("post.html", p=self)
 
 
 class MyBlogFront(Handler):
